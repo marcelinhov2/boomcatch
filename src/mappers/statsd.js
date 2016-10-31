@@ -48,6 +48,12 @@ function map (prefix, data, referer) {
 
     data = normalise(data);
 
+    prefix = prefix + data.prefixComplement + '.';
+
+    delete data.prefixComplement;
+
+    // console.log('*****************');
+
     Object.keys(data).forEach(function (category) {
         var mapper;
 
@@ -60,7 +66,13 @@ function map (prefix, data, referer) {
         if (data[category]) {
             result += mapper(prefix + category + '.', data[category], referer);
         }
+
+        // console.log('//////////////////////')
+        // console.log(result)
+        // console.log('//////////////////////')
     });
+
+    // console.log('*****************');
 
     return result;
 }

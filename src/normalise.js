@@ -20,15 +20,53 @@
 'use strict';
 
 var check = require('check-types');
+var camelize = require('camelize');
+var URL = require('url-parse');
+var parser = require('json-parser');
+var object = require('lodash/fp/object');
+var ResourceTimingDecompression = require("resourcetiming-compression").ResourceTimingDecompression;
 
 module.exports = normalise;
 
 function normalise (data) {
+    var routeName = normalizeRouteName(data);
+
+    console.log(normaliseRestimingCountData(data));
+    // normaliseRestimingData(data);
+  
+    // console.log(normaliseRtData(data));
+    // console.log(normaliseNavtimingData(data));
+
     return {
         rt: normaliseRtData(data),
         navtiming: normaliseNavtimingData(data),
-        restiming: normaliseRestimingData(data)
+        restiming: normaliseRestimingData(data),
+        prefixComplement: routeName
     };
+}
+
+function normalizeRouteName (data) {
+    var route = null;
+
+    var hashIndex = data.u.indexOf('#');
+    
+    if(hashIndex >= 0){
+        route = data.u.substring(hashIndex + 2);
+
+        var querystringIndex = route.indexOf('?');
+
+        if(querystringIndex >= 0)
+            route = route.substring(0 , querystringIndex);
+    }
+    else {
+        var url = new URL(data.u);
+        route = url.pathname.substring(1);
+
+        if(url.pathname == '/')
+            route = 'initialLoad';
+    }
+
+    return camelize(route);
 }
 
 function normaliseRtData (data) {
@@ -225,3 +263,33 @@ function normaliseRestimingData (data) {
     }
 }
 
+function normaliseRestimingCountData (data) {
+    data = JSON.stringify(data);
+
+    return {
+        js: occurrences(data, '.js'),
+        css: occurrences(data, '.css'),
+        html: occurrences(data, '.html'),
+        jpg: occurrences(data, '.jpg')
+    }
+}
+
+function occurrences(string, subString, allowOverlapping) {
+
+    string += "";
+    subString += "";
+    if (subString.length <= 0) return (string.length + 1);
+
+    var n = 0,
+        pos = 0,
+        step = allowOverlapping ? 1 : subString.length;
+
+    while (true) {
+        pos = string.indexOf(subString, pos);
+        if (pos >= 0) {
+            ++n;
+            pos += step;
+        } else break;
+    }
+    return n;
+}
